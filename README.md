@@ -1,6 +1,7 @@
 # PowerPoint-Gantt
 Simple VBA class to create aesthetically pleasing and customizable Gantt Charts in PowerPoint
 
+![ss](https://user-images.githubusercontent.com/5026737/104786585-9c58c280-578d-11eb-8728-88ed64212177.png)
 # Usage example
 ```vb
 Sub run()
