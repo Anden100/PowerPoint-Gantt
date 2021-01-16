@@ -44,3 +44,8 @@ Sub run()
     Gantt.Generate
 End Sub
 ```
+
+# Todo
+ - [ ] Weeks in header
+ - [ ] Ability to customize which separators are shown
+ - [ ] Ability to add lines between rows
