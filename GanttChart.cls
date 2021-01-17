@@ -9,16 +9,20 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Option Explicit
 
-Private Type Activity
-    Text As String
-    Responsible As String
+Private Type ActivityBar
     StartDate As Double
     EndDate As Double
     Color As Double
     DashStyle As MsoLineDashStyle
     BorderColor As Double
+End Type
+
+Private Type Activity
+    Text As String
+    Responsible As String
     Top As Double
     Height As Double
+    ActivityBars() As ActivityBar
 End Type
 
 Private Type Callout
@@ -226,19 +230,42 @@ Private Function ConvertBorderStyleToDashStyle(LineStyle) As MsoLineDashStyle
     End Select
 End Function
 
-Public Sub AddActivity(Text, StartDate, EndDate, Optional Responsible = "", Optional Color = 0, Optional BorderStyle = xlLineStyleNone, Optional BorderColor = 0)
+Public Function AddActivity(Text, StartDate, EndDate, Optional Responsible = "", Optional Color = 0, Optional BorderStyle = xlLineStyleNone, Optional BorderColor = 0)
     Dim NewActivity As Activity
+    Dim ActivityBars(0) As ActivityBar
+    
     NewActivity.Text = Text
     NewActivity.Responsible = Responsible
-    NewActivity.StartDate = StartDate
-    NewActivity.EndDate = EndDate
-    NewActivity.Color = Color
-    NewActivity.DashStyle = ConvertBorderStyleToDashStyle(BorderStyle)
-    NewActivity.BorderColor = BorderColor
+    ActivityBars(0).StartDate = StartDate
+    ActivityBars(0).EndDate = EndDate
+    ActivityBars(0).Color = Color
+    ActivityBars(0).DashStyle = ConvertBorderStyleToDashStyle(BorderStyle)
+    ActivityBars(0).BorderColor = BorderColor
+    
+    NewActivity.ActivityBars = ActivityBars
     
     NumActivities = NumActivities + 1
     ReDim Preserve Activities(0 To NumActivities - 1)
     Activities(NumActivities - 1) = NewActivity
+    
+    AddActivity = NumActivities - 1
+End Function
+
+Public Sub AddActivityBar(ActivityIndex As Integer, StartDate, EndDate, Optional Color = 0, Optional BorderStyle = xlLineStyleNone, Optional BorderColor = 0)
+    Dim n As Integer
+    Dim ActivityBars() As ActivityBar
+    ActivityBars = Activities(ActivityIndex).ActivityBars
+    
+    n = UBound(ActivityBars) + 1
+    ReDim Preserve ActivityBars(n)
+    
+    ActivityBars(n).StartDate = StartDate
+    ActivityBars(n).EndDate = EndDate
+    ActivityBars(n).Color = Color
+    ActivityBars(n).DashStyle = ConvertBorderStyleToDashStyle(BorderStyle)
+    ActivityBars(n).BorderColor = BorderColor
+    
+    Activities(ActivityIndex).ActivityBars = ActivityBars
 End Sub
 
 Public Sub AddCallout(Text, CalloutDate, Optional DashStyle As MsoLineDashStyle = msoLineLongDash)
@@ -302,15 +329,17 @@ Private Sub CreateLabels()
 End Sub
 
 Private Sub CreateBars()
-    Dim i As Integer
+    Dim i, j As Integer
     Dim StartValBox, EndValBox, BarTop, BarLeft, BarWidth As Double
     For i = 0 To (NumActivities - 1)
-        StartValBox = Activities(i).StartDate
-        EndValBox = Activities(i).EndDate
-        BarTop = Activities(i).Top + Activities(i).Height / 2 - BarHeight / 2
-        BarLeft = BoxLeft + ((StartValBox - StartDate) / (EndDate - StartDate)) * BoxWidth
-        BarWidth = ((EndValBox - StartValBox) / (EndDate - StartDate)) * BoxWidth
-        CreateBar BarLeft, BarTop, BarWidth, BarHeight, True, Activities(i).Color, Activities(i).DashStyle, Activities(i).BorderColor
+        For j = 0 To UBound(Activities(i).ActivityBars)
+            StartValBox = Activities(i).ActivityBars(j).StartDate
+            EndValBox = Activities(i).ActivityBars(j).EndDate
+            BarTop = Activities(i).Top + Activities(i).Height / 2 - BarHeight / 2
+            BarLeft = BoxLeft + ((StartValBox - StartDate) / (EndDate - StartDate)) * BoxWidth
+            BarWidth = ((EndValBox - StartValBox) / (EndDate - StartDate)) * BoxWidth
+            CreateBar BarLeft, BarTop, BarWidth, BarHeight, True, Activities(i).ActivityBars(j).Color, Activities(i).ActivityBars(j).DashStyle, Activities(i).ActivityBars(j).BorderColor
+        Next j
     Next i
 End Sub
 
