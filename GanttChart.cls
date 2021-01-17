@@ -35,14 +35,16 @@ Public MarginTop As Integer
 Public BarHeight As Double
 Public YearHeader As Boolean
 Public MonthHeader As Boolean
+Public MonthLines As Boolean
+
 Public LabelFontSize As Double
 Public OutlineColor As Long
 Public LabelFontColor As Long
 Public HeaderFontColor As Long
 Public ResponsibleColumn As Boolean
 
-Public StartDate
-Public EndDate
+Public StartDate As Date
+Public EndDate As Date
 
 Private Activities() As Activity
 Private NumActivities As Integer
@@ -76,6 +78,7 @@ Private Sub Class_Initialize()
     BarHeight = 12
     YearHeader = True
     MonthHeader = True
+    MonthLines = True
     
     OutlineColor = RGB(32, 32, 32)
     LabelFontColor = RGB(64, 64, 64)
@@ -110,7 +113,7 @@ Private Sub AddShapeToList(Name)
     ShapeNames(NumShapes - 1) = Name
 End Sub
 
-Private Function CreateCenteredTextBox(x, y, Width, Height, Text, Optional TextColor = 0)
+Private Function CreateCenteredTextBox(x, y, Width, Height, Text, Optional TextColor = 0, Optional Border As Boolean = False)
     Dim lbl As Shape
     Set lbl = Destination.Shapes.AddLabel(msoTextOrientationHorizontal, x, y, Width, Height)
     lbl.TextFrame2.TextRange.Characters.Text = Text
@@ -122,6 +125,11 @@ Private Function CreateCenteredTextBox(x, y, Width, Height, Text, Optional TextC
     lbl.TextFrame2.VerticalAnchor = msoAnchorMiddle
     lbl.Width = Width
     lbl.Height = Height
+    
+    If Border Then
+        lbl.line.Visible = msoTrue
+        lbl.line.ForeColor.RGB = OutlineColor
+    End If
     
     AddShapeToList lbl.Name
     Set CreateCenteredTextBox = lbl
@@ -186,7 +194,7 @@ Private Sub CreateLine(x1, y1, x2, y2, Optional DashStyle As MsoLineDashStyle = 
     Set line = Destination.Shapes.AddConnector(msoConnectorStraight, x1, y1, x2, y2)
     With line.line
         .ForeColor.RGB = OutlineColor
-        .Weight = 1
+        .Weight = 0.75
         .DashStyle = DashStyle
     End With
     
@@ -336,12 +344,14 @@ Private Sub CreateYearHeader()
         HeaderLabelWidth = Days / TotalDays * BoxWidth
         
         CreateCenteredTextBox Position, MarginTop, HeaderLabelWidth, pHeaderBarHeight, Year(i), TextColor:=HeaderFontColor
-        CreateLine Position, MarginTop, Position, MarginTop + LineLength
+        ' MOVE THIS SOMEWHERE ELSE?
+        'CreateLine Position, MarginTop, Position, MarginTop + LineLength
         i = i + Days
         Position = Position + HeaderLabelWidth
     Loop
     
-    CreateLine Position, MarginTop, Position, MarginTop + LineLength
+    ' MOVE THIS LINE SOMEWHERE ELSE - WHERE IS OTHER VERTICAL LINE CREATED?
+    'CreateLine Position, MarginTop, Position, MarginTop + LineLength
 End Sub
 
 Private Sub CreateMonthHeader(Optional offset = 0)
@@ -365,8 +375,7 @@ Private Sub CreateMonthHeader(Optional offset = 0)
         Days = EndMonth - i + 1
         HeaderLabelWidth = Days / TotalDays * BoxWidth
         
-        CreateCenteredTextBox Position, MarginTop + offset, HeaderLabelWidth, pHeaderBarHeight, MonthName(Month(i), 3), TextColor:=HeaderFontColor
-        CreateLine Position, MarginTop + offset, Position, MarginTop + LineLength
+        CreateCenteredTextBox Position, MarginTop + offset, HeaderLabelWidth, pHeaderBarHeight, MonthName(Month(i), 3), TextColor:=HeaderFontColor, Border:=True
         
         i = i + Days
         Position = Position + HeaderLabelWidth
@@ -388,6 +397,35 @@ End Sub
 Private Sub CreateLines()
     CreateLine MarginLeft, MarginTop + pHeaderBarHeight * NumHeaders, MarginLeft + MaxWidth, MarginTop + pHeaderBarHeight * NumHeaders
     CreateLine MarginLeft, MarginTop + LabelHeight + pHeaderBarHeight * NumHeaders + 15, MarginLeft + MaxWidth, MarginTop + LabelHeight + pHeaderBarHeight * NumHeaders + 15
+    
+    'Create start and end line
+    Dim LineLength As Double
+    LineLength = LabelHeight + pHeaderBarHeight * NumHeaders + 15
+    CreateLine MarginLeft + LabelWidth + 15, MarginTop, MarginLeft + LabelWidth + 15, MarginTop + LineLength
+    CreateLine MarginLeft + LabelWidth + BoxWidth + 15, MarginTop, MarginLeft + BoxWidth + LabelWidth + 15, MarginTop + LineLength
+    
+    'Create line every month
+    Dim i, EndMonth, Days, TotalDays, Position As Double
+    If MonthLines Then
+        TotalDays = EndDate - StartDate + 1
+        Position = BoxLeft
+        i = StartDate
+        Do While i <= EndDate
+            EndMonth = CDbl(DateSerial(Year(i), Month(i) + 1, 1)) - 1
+            If EndMonth > EndDate Then
+                EndMonth = EndDate
+            End If
+            Days = EndMonth - i + 1
+            
+            HeaderLabelWidth = Days / TotalDays * BoxWidth
+            i = i + Days
+            Position = Position + HeaderLabelWidth
+            
+            If i < EndDate Then
+                CreateLine Position, MarginTop + pHeaderBarHeight * NumHeaders, Position, MarginTop + pHeaderBarHeight * NumHeaders + LabelHeight + 15
+            End If
+        Loop
+    End If
 End Sub
 
 Public Sub Generate()
@@ -423,4 +461,3 @@ Public Sub Generate()
     
     On Error GoTo 0
 End Sub
-
