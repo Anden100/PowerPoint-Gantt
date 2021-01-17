@@ -35,6 +35,7 @@ Public MarginTop As Integer
 Public BarHeight As Double
 Public YearHeader As Boolean
 Public MonthHeader As Boolean
+Public WeekHeader As Boolean
 Public MonthLines As Boolean
 
 Public LabelFontSize As Double
@@ -65,7 +66,6 @@ Private HeaderLabelWidth As Double
 Private pHeaderBarHeight As Double
 Private pHeaderFontSize As Double
 
-
 Private Sub Class_Initialize()
     Set Destination = Application.ActiveWindow.View.Slide
 
@@ -78,6 +78,7 @@ Private Sub Class_Initialize()
     BarHeight = 12
     YearHeader = True
     MonthHeader = True
+    WeekHeader = True
     MonthLines = True
     
     OutlineColor = RGB(32, 32, 32)
@@ -326,9 +327,7 @@ Private Sub CreateCallouts()
 End Sub
 
 Private Sub CreateYearHeader()
-    Dim TotalDays, i, j, Position, Days, EndMonth, HeaderLabelWidth, LineLength As Double
-    
-    LineLength = LabelHeight + pHeaderBarHeight * NumHeaders + 15
+    Dim TotalDays, i, j, Position, Days, EndMonth, HeaderLabelWidth As Double
     
     TotalDays = EndDate - StartDate + 1
     j = 0
@@ -344,20 +343,13 @@ Private Sub CreateYearHeader()
         HeaderLabelWidth = Days / TotalDays * BoxWidth
         
         CreateCenteredTextBox Position, MarginTop, HeaderLabelWidth, pHeaderBarHeight, Year(i), TextColor:=HeaderFontColor
-        ' MOVE THIS SOMEWHERE ELSE?
-        'CreateLine Position, MarginTop, Position, MarginTop + LineLength
         i = i + Days
         Position = Position + HeaderLabelWidth
     Loop
-    
-    ' MOVE THIS LINE SOMEWHERE ELSE - WHERE IS OTHER VERTICAL LINE CREATED?
-    'CreateLine Position, MarginTop, Position, MarginTop + LineLength
 End Sub
 
 Private Sub CreateMonthHeader(Optional offset = 0)
-    Dim TotalDays, i, j, Position, Days, EndMonth, HeaderLabelWidth, LineLength As Double
-    
-    LineLength = LabelHeight + pHeaderBarHeight * NumHeaders + 15
+    Dim TotalDays, i, j, Position, Days, EndMonth, HeaderLabelWidth As Double
     
     TotalDays = EndDate - StartDate + 1
     j = 0
@@ -382,6 +374,35 @@ Private Sub CreateMonthHeader(Optional offset = 0)
     Loop
 End Sub
 
+Private Sub CreateWeekHeader(Optional offset = 0)
+    Dim TotalDays, i, j, Position, Days, EndMonth, HeaderLabelWidth, LineLength, NextWeek As Double
+    Dim iWeekNumber, iWeekDay As Integer
+    
+    LineLength = LabelHeight + pHeaderBarHeight * NumHeaders + 15
+    
+    TotalDays = EndDate - StartDate + 1
+    j = 0
+    i = StartDate
+    Position = BoxLeft
+        
+    Do While i < EndDate
+        iWeekNumber = DatePart("ww", i, vbMonday, vbFirstFourDays)
+        iWeekDay = Weekday(i, vbMonday)
+        
+        NextWeek = i + 7 - iWeekDay
+        If NextWeek > EndDate Then
+            NextWeek = EndDate
+        End If
+        
+        Days = NextWeek - i + 1
+        HeaderLabelWidth = Days / TotalDays * BoxWidth
+        
+        CreateCenteredTextBox Position, MarginTop + offset, HeaderLabelWidth, pHeaderBarHeight, iWeekNumber, TextColor:=HeaderFontColor, Border:=True
+        i = i + Days
+        Position = Position + HeaderLabelWidth
+    Loop
+End Sub
+
 Private Sub CreateHeader()
     Dim offset As Double
     offset = 0
@@ -391,6 +412,10 @@ Private Sub CreateHeader()
     End If
     If MonthHeader Then
         CreateMonthHeader offset
+        offset = offset + pHeaderBarHeight
+    End If
+    If WeekHeader Then
+        CreateWeekHeader offset
     End If
 End Sub
 
@@ -438,6 +463,9 @@ Public Sub Generate()
         NumHeaders = NumHeaders + 1
     End If
     If MonthHeader Then
+        NumHeaders = NumHeaders + 1
+    End If
+    If WeekHeader Then
         NumHeaders = NumHeaders + 1
     End If
 
