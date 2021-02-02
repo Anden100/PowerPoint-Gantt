@@ -15,6 +15,7 @@ Private Type ActivityBar
     Color As Double
     DashStyle As MsoLineDashStyle
     BorderColor As Double
+    Fill As MsoTriState
 End Type
 
 Private Type Activity
@@ -125,7 +126,7 @@ Private Function CreateCenteredTextBox(x, y, Width, Height, Text, Optional TextC
     lbl.TextFrame2.WordWrap = False
     lbl.TextFrame2.AutoSize = msoAutoSizeNone
     lbl.TextFrame2.TextRange.Characters.Font.size = pHeaderFontSize
-    lbl.TextFrame2.TextRange.Font.fill.ForeColor.RGB = TextColor
+    lbl.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = TextColor
     lbl.TextFrame2.TextRange.Characters.ParagraphFormat.Alignment = msoAlignCenter
     lbl.TextFrame2.VerticalAnchor = msoAnchorMiddle
     lbl.Width = Width
@@ -144,17 +145,17 @@ Sub CreateSquare(x, y, Width, Height, Text, Optional TextColor = 0)
     Destination.Shapes.AddShape(msoShapeRectangle, x, y, Width, Height).Select
     
     With Selection.ShapeRange
-        .fill.Visible = msoFalse
+        .Fill.Visible = msoFalse
         .line.Visible = msoTrue
         .line.ForeColor.RGB = OutlineColor
     End With
     
     Selection.ShapeRange(1).TextFrame2.TextRange.Characters.Text = Text
     With Selection.ShapeRange.TextFrame2.TextRange
-        .Font.fill.Visible = msoTrue
-        .Font.fill.ForeColor.RGB = TextColor
-        .Font.fill.Transparency = 0
-        .Font.fill.Solid
+        .Font.Fill.Visible = msoTrue
+        .Font.Fill.ForeColor.RGB = TextColor
+        .Font.Fill.Transparency = 0
+        .Font.Fill.Solid
         .Font.size = pHeaderFontSize
         .Characters.ParagraphFormat.FirstLineIndent = 0
         .Characters.ParagraphFormat.Alignment = msoAlignCenter
@@ -172,17 +173,19 @@ Private Function CreateTextBox(x, y, Text, Optional TextColor = 0, Optional Font
     lbl.TextFrame2.AutoSize = msoAutoSizeShapeToFitText
     lbl.TextFrame2.WordWrap = False
     lbl.TextFrame2.TextRange.Characters.Font.size = FontSize
-    lbl.TextFrame2.TextRange.Font.fill.ForeColor.RGB = TextColor
+    lbl.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = TextColor
     lbl.TextFrame2.VerticalAnchor = msoAnchorMiddle
     
     AddShapeToList lbl.Name
     Set CreateTextBox = lbl
 End Function
 
-Private Sub CreateBar(x, y, Width, Height, fill, Color, DashStyle, BorderColor)
+Private Sub CreateBar(x, y, Width, Height, Fill As MsoTriState, FillColor, DashStyle, BorderColor)
     Dim bar As Shape
     Set bar = Destination.Shapes.AddShape(msoShapeRectangle, x, y, Width, Height)
-    bar.fill.ForeColor.RGB = Color
+    bar.Fill.Visible = Fill
+    bar.Fill.ForeColor.RGB = FillColor
+    
     If DashStyle = 0 Then
         bar.line.Visible = msoFalse
     Else
@@ -230,9 +233,13 @@ Private Function ConvertBorderStyleToDashStyle(LineStyle) As MsoLineDashStyle
     End Select
 End Function
 
-Public Function AddActivity(Text, StartDate, EndDate, Optional Responsible = "", Optional Color = 0, Optional BorderStyle = xlLineStyleNone, Optional BorderColor = 0)
+Public Function AddActivity(Text, StartDate, EndDate, Optional Responsible = "", Optional Fill As MsoTriState = msoTrue, Optional Color = 0, Optional BorderStyle As XlLineStyle = xlContinuous, Optional BorderColor = -1)
     Dim NewActivity As Activity
     Dim ActivityBars(0) As ActivityBar
+    
+    If BorderColor = -1 Then
+        BorderColor = Color
+    End If
     
     NewActivity.Text = Text
     NewActivity.Responsible = Responsible
@@ -241,6 +248,7 @@ Public Function AddActivity(Text, StartDate, EndDate, Optional Responsible = "",
     ActivityBars(0).Color = Color
     ActivityBars(0).DashStyle = ConvertBorderStyleToDashStyle(BorderStyle)
     ActivityBars(0).BorderColor = BorderColor
+    ActivityBars(0).Fill = Fill
     
     NewActivity.ActivityBars = ActivityBars
     
@@ -251,7 +259,7 @@ Public Function AddActivity(Text, StartDate, EndDate, Optional Responsible = "",
     AddActivity = NumActivities - 1
 End Function
 
-Public Sub AddActivityBar(ActivityIndex As Integer, StartDate, EndDate, Optional Color = 0, Optional BorderStyle = xlLineStyleNone, Optional BorderColor = 0)
+Public Sub AddActivityBar(ActivityIndex As Integer, StartDate, EndDate, Optional Fill As MsoTriState = msoTrue, Optional Color = 0, Optional BorderStyle As XlLineStyle = xlContinuous, Optional BorderColor = -1)
     Dim n As Integer
     Dim ActivityBars() As ActivityBar
     ActivityBars = Activities(ActivityIndex).ActivityBars
@@ -259,11 +267,16 @@ Public Sub AddActivityBar(ActivityIndex As Integer, StartDate, EndDate, Optional
     n = UBound(ActivityBars) + 1
     ReDim Preserve ActivityBars(n)
     
+    If BorderColor = -1 Then
+        BorderColor = Color
+    End If
+    
     ActivityBars(n).StartDate = StartDate
     ActivityBars(n).EndDate = EndDate
     ActivityBars(n).Color = Color
     ActivityBars(n).DashStyle = ConvertBorderStyleToDashStyle(BorderStyle)
     ActivityBars(n).BorderColor = BorderColor
+    ActivityBars(n).Fill = Fill
     
     Activities(ActivityIndex).ActivityBars = ActivityBars
 End Sub
@@ -338,7 +351,7 @@ Private Sub CreateBars()
             BarTop = Activities(i).Top + Activities(i).Height / 2 - BarHeight / 2
             BarLeft = BoxLeft + ((StartValBox - StartDate) / (EndDate - StartDate)) * BoxWidth
             BarWidth = ((EndValBox - StartValBox) / (EndDate - StartDate)) * BoxWidth
-            CreateBar BarLeft, BarTop, BarWidth, BarHeight, True, Activities(i).ActivityBars(j).Color, Activities(i).ActivityBars(j).DashStyle, Activities(i).ActivityBars(j).BorderColor
+            CreateBar BarLeft, BarTop, BarWidth, BarHeight, Activities(i).ActivityBars(j).Fill, Activities(i).ActivityBars(j).Color, Activities(i).ActivityBars(j).DashStyle, Activities(i).ActivityBars(j).BorderColor
         Next j
     Next i
 End Sub
